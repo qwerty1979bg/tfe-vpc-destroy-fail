@@ -27,8 +27,6 @@ resource "aws_vpc_dhcp_options" "dhcp_options" {
 # VPC
 ###################################################################
 
-// TODO - missing Name tag
-
 resource "aws_vpc" "this" {
   assign_generated_ipv6_cidr_block = false
   cidr_block                       = "${var.vpc_cidr_block}"
@@ -85,20 +83,14 @@ resource "aws_vpc_dhcp_options_association" "dhcp_options_association" {
 ###################################################################
 
 resource "aws_eip" "nat_eip" {
-  // TODO - validate this logic / replacement
-  //count = "${(length(var.public_subnets)) * lookup(map(var.enable_nat_gateway, 1), "1", 0)}"
   count = "${var.enable_nat_gateway == 1 ? length(var.public_subnets) : 0}"
 
   vpc = true
 }
 
-// TODO - Review what is using the NAT GW and is routing set up properly?
-
 resource "aws_nat_gateway" "this" {
   allocation_id = "${element(aws_eip.nat_eip.*.id, count.index)}"
 
-  // TODO - validate this logic / replacement
-  //count         = "${(length(var.public_subnets)) * lookup(map(var.enable_nat_gateway, 1), "1", 0)}"
   count = "${var.enable_nat_gateway == 1 ? length(var.public_subnets) : 0}"
 
   subnet_id = "${element(aws_subnet.public.*.id, count.index)}"
@@ -141,7 +133,6 @@ resource "aws_route_table" "private" {
 }
 
 resource "aws_route" "private_igw" {
-  //count                  = "${(length(var.private_subnets))}"
   count = "${var.enable_nat_gateway == 0 ? (length(var.private_subnets)) : 0}"
 
   destination_cidr_block = "0.0.0.0/0"
@@ -162,12 +153,10 @@ resource "aws_subnet" "private" {
   cidr_block        = "${var.private_subnets[count.index]}"
   count             = "${length(var.private_subnets)}"
 
-  // TODO - review this logic: explicit or implicit access to the public network?
   map_public_ip_on_launch = "${var.enable_nat_gateway == 1 ? false : true}"
 
   vpc_id = "${aws_vpc.this.id}"
 
-  // TODO - DECISION - based on how the topology is laid out, we have private and public EKS-related tags here.
   tags = "${
     merge(
       var.tags,
@@ -211,7 +200,6 @@ resource "aws_route_table" "data" {
   }"
 }
 
-// TODO - do we need this (db to internet)?
 resource "aws_route" "data_igw_route" {
   count                  = "${length(var.data_subnets) >= 1 ? 1 : 0}"
   destination_cidr_block = "0.0.0.0/0"
@@ -255,10 +243,6 @@ resource "aws_route_table" "public" {
   count  = "${length(var.public_subnets) >= 1 ? 1 : 0}"
   vpc_id = "${aws_vpc.this.id}"
 
-  // TODO - review the tags and add to the standard ones for ALL networks:
-  // TODO - you'll have to check the k8s required tags too!
-  //  tags             = "${merge(var.tags, map("Name", format("%s-%s-rt-public-all-az", var.account_id, var.environment)))}"
-
   tags = "${
     merge(
       var.tags,
@@ -287,8 +271,6 @@ resource "aws_subnet" "public" {
 
   map_public_ip_on_launch = true
   vpc_id                  = "${aws_vpc.this.id}"
-
-  // TODO - DECISION - based on how the topology is laid out, we have private and public EKS-related tags here.
 
   tags = "${
     merge(

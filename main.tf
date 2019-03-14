@@ -3,7 +3,6 @@
 ###################################################################
 
 module "demo_network" {
-  //source = "git::ssh://git@bitbucket.org/thinkwrap/terraform-aws-vpc//modules?ref=master"
   source = "./modules"
 
   app_type     = "vpc-net"

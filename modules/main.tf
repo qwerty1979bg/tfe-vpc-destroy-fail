@@ -8,7 +8,6 @@ data "aws_availability_zones" "available" {}
 # Random ID Generation Resource (Tags and Labels)
 ###################################################################
 
-// TODO - Review if this is needed here or in the core module.
 resource "random_id" "this" {
   byte_length = 3
 }
